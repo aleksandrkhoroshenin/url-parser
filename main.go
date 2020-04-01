@@ -47,12 +47,14 @@ func main() {
 	}()
 
 	for _, value := range mUrls {
-			urlCh <- value
+		urlCh <- value
 	}
 
 	close(urlCh)
 
 	wg.Wait()
+
+	close(ch)
 }
 
 func makeRequest(url string) (int, error) {
