@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"net/http"
+	"os"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -15,14 +18,25 @@ func main() {
 
 	urlCh := make(chan string, 5)
 
-	urls := `https://golang.org\nhttps://golang.org\nhttps://golang.org\nhttps://golang.org
-				\nhttps://golang.org\nhttps://golang.org\nhttps://golang.org\nhttps://golang.org`
+	reader := bufio.NewReader(os.Stdin)
+	urls, _ := reader.ReadString('\n')
+
+	re := regexp.MustCompile(`[[:space:]]`)
+
+	urls = re.ReplaceAllString(urls, "")
+
+	//urls := `https://golang.org\nhttps://golang.org\nhttps://golang.org\nhttps://golang.org
+	//			\nhttps://golang.org\nhttps://golang.org\nhttps://golang.org\nhttps://golang.org`
 
 	mUrls := strings.Split(urls, `\n`)
+
+	fmt.Println(mUrls)
 
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
+
+	var count int
 
 	go func() {
 		defer wg.Done()
@@ -31,7 +45,7 @@ func main() {
 
 			wg.Add(1)
 
-			go func() {
+			go func(url string) {
 				defer wg.Done()
 
 				n, err := makeRequest(url)
@@ -39,10 +53,12 @@ func main() {
 					fmt.Println(err)
 				}
 
-				fmt.Println("count :", n)
+				count += n
+
+				fmt.Printf("count %s: %d \n", url, n)
 
 				<-ch
-			}()
+			}(url)
 		}
 	}()
 
@@ -55,6 +71,8 @@ func main() {
 	wg.Wait()
 
 	close(ch)
+
+	println("total: ", count)
 }
 
 func makeRequest(url string) (int, error) {
